@@ -4,6 +4,9 @@ var uglify = require('gulp-uglify');
 var react = require('gulp-react');
 var htmlreplace = require('gulp-html-replace');
 
+var livereload = require('gulp-livereload');
+var webserver = require('gulp-webserver');
+
 var path = {
   HTML: 'src/index.html',
   ALL: ['src/js/*.js', 'src/js/**/*.js', 'src/index.html'],
@@ -38,4 +41,42 @@ gulp.task('watch', function(){
   gulp.watch(path.ALL, ['transform', 'copy']);
 });
 
-gulp.task('default', ['watch']);
+gulp.task('webserver',function () {
+  gulp.src('src')  // 服务器根目录
+  .pipe(webserver({   // 运行webserver
+    livereload: true,    // 启用livereload
+    open: true  // 服务器启动时自动打开网页
+  }));
+});
+
+
+gulp.task('default', ['webserver','watch']);
+
+/*
+  grab all of JS files, concatenate all of them together, 
+  minify them, then output the result to  dist/build folder. 
+*/
+gulp.task('build', function(){
+  gulp.src(path.JS)
+    .pipe(react())
+    .pipe(concat(path.MINIFIED_OUT))
+    .pipe(uglify(path.MINIFIED_OUT))
+    .pipe(gulp.dest(path.DEST_BUILD));
+});
+
+
+/*
+  htmlreplace is an object with a key that represents where to replace 
+  and whose value is what to replace. 
+  That ‘js’ key in htmlreplace coincides with** build:js** in index.html page.
+*/
+gulp.task('replaceHTML', function(){
+  gulp.src(path.HTML)
+    .pipe(htmlreplace({
+      'js': 'build/' + path.MINIFIED_OUT
+    }))
+    .pipe(gulp.dest(path.DEST));
+});
+
+
+gulp.task('production', ['replaceHTML', 'build']);
